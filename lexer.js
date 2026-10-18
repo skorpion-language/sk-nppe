@@ -2,7 +2,7 @@
 'use strict';
 
 // ============================================================
-// Типы токенов — 1:1 с твоим lexer.go
+// Типы токенов — 1:1 с новым lexer.go
 // ============================================================
 
 const TOK = {
@@ -10,7 +10,11 @@ const TOK = {
     IDENT: 'IDENT',
     NUMBER: 'NUMBER',
     STRING: 'STRING',
+    CHARLIT: 'CHARLIT',
+    UNICODE_LIT: 'UNICODE_LIT',
     KEYWORD: 'KEYWORD',
+    VERSION: 'VERSION',
+
     LPAREN: 'LPAREN',
     RPAREN: 'RPAREN',
     LBRACE: 'LBRACE',
@@ -19,50 +23,61 @@ const TOK = {
     RBRACKET: 'RBRACKET',
     SEMICOLON: 'SEMICOLON',
     COMMA: 'COMMA',
-    NEQ: 'NEQ',           // !=
-    EQEQ: 'EQEQ',         // ==
-    LTE: 'LTE',           // <=
-    GTE: 'GTE',           // >=
+
+    PLUSEQ: 'PLUSEQ',
+    MINUSEQ: 'MINUSEQ',
+    STAREQ: 'STAREQ',
+    SLASHEQ: 'SLASHEQ',
+    PERCENTEQ: 'PERCENTEQ',
+    POWEQ: 'POWEQ',
+    PLUSPLUS: 'PLUSPLUS',
+    MINUSMINUS: 'MINUSMINUS',
+    NEQ: 'NEQ',
+    EQEQ: 'EQEQ',
+    LTE: 'LTE',
+    GTE: 'GTE',
     PLUS: 'PLUS',
     MINUS: 'MINUS',
     STAR: 'STAR',
     SLASH: 'SLASH',
-    CARET: 'CARET',       // ^
-    POW: 'POW',           // **
-    EQUALS: 'EQUALS',     // =
-    LT: 'LT',             // <
-    GT: 'GT',             // >
-    NOT: 'NOT',           // !
-    AND: 'AND',           // &&
-    OR: 'OR',             // ||
-    AMPERSAND: 'AMPERSAND', // &
-    HASH: 'HASH',         // #
-    DOLLAR: 'DOLLAR',     // $
-    DOT: 'DOT',           // .
-    DOTDOT: 'DOTDOT',     // ..
-    QUESTION: 'QUESTION', // ?
-    COLON: 'COLON',       // :
-    INCLUDE_C: 'INCLUDE_C', // includeC
-    TILDE: 'TILDE',       // ~~~
-    PERCENT: 'PERCENT',   // %
+    CARET: 'CARET',
+    POW: 'POW',
+    EQUALS: 'EQUALS',
+    LT: 'LT',
+    GT: 'GT',
+    NOT: 'NOT',
+    AND: 'AND',
+    OR: 'OR',
+    AMPERSAND: 'AMPERSAND',
+    HASH: 'HASH',
+    DOLLAR: 'DOLLAR',
+    DOT: 'DOT',
+    DOTDOT: 'DOTDOT',
+    ELLIPSIS: 'ELLIPSIS',
+    QUESTION: 'QUESTION',
+    COLON: 'COLON',
+    INCLUDE_C: 'INCLUDE_C',
+    TILDE: 'TILDE',
+    PERCENT: 'PERCENT',
 };
 
-// Ключевые слова — из твоего lexer.go
+// Ключевые слова — из нового lexer.go
 const KEYWORDS = new Set([
-    'use', 'const', 'func', 'if', 'elsif', 'else', 'case', 'for', 'while',
-    'type', 'return', 'null', 'void', 'int', 'char', 'string', 'arr',
-    'dict', 'float', 'double', 'bool', 'any', 'true', 'false', 'T',
-    'new', 'Error', 'throw', 'try', 'catch', 'as'
+    'use', 'const', 'func', 'if', 'elsif', 'else', 'case', 'for', 'in',
+    'break', 'continue', 'do', 'while', 'type', 'return', 'null', 'void',
+    'int', 'char', 'string', 'async', 'await', 'Promise', 'arr', 'dict',
+    'float', 'double', 'bool', 'any', 'true', 'false', 'T', 'new', 'Error',
+    'throw', 'try', 'catch', 'as', 'IknowIdo'
 ]);
 
-// Типы (подмножество KEYWORDS)
+// Типы
 const TYPE_KEYWORDS = new Set([
     'void', 'int', 'char', 'string', 'arr', 'dict',
     'float', 'double', 'bool', 'any', 'T'
 ]);
 
 // ============================================================
-// Лексер — порт lexer.go
+// Лексер
 // ============================================================
 
 class Lexer {
@@ -128,7 +143,6 @@ class Lexer {
             this.pos++;
             this.col++;
         }
-        // .digits
         if (this.pos + 1 < this.input.length &&
             this.input[this.pos] === '.' &&
             /[0-9]/.test(this.input[this.pos + 1])) {
@@ -149,10 +163,50 @@ class Lexer {
         return { type: TOK.NUMBER, value: literal, line: this.line, col: startCol };
     }
 
+    readCharLit() {
+        const startCol = this.col;
+        const startLine = this.line;
+        this.pos++; // '
+        this.col++;
+
+        let ch;
+        if (this.pos < this.input.length && this.input[this.pos] === '\\' && this.pos + 1 < this.input.length) {
+            this.pos++;
+            this.col++;
+            const esc = this.input[this.pos];
+            switch (esc) {
+                case 'n': ch = '\n'; break;
+                case 't': ch = '\t'; break;
+                case 'r': ch = '\r'; break;
+                case '0': ch = '\0'; break;
+                case '\\': ch = '\\'; break;
+                case "'": ch = "'"; break;
+                case '"': ch = '"'; break;
+                case 'a': ch = '\x07'; break;
+                case 'b': ch = '\x08'; break;
+                case 'f': ch = '\x0C'; break;
+                case 'v': ch = '\x0B'; break;
+                default: ch = esc;
+            }
+            this.pos++;
+            this.col++;
+        } else if (this.pos < this.input.length) {
+            ch = this.input[this.pos];
+            this.pos++;
+            this.col++;
+        }
+
+        if (this.pos < this.input.length && this.input[this.pos] === "'") {
+            this.pos++;
+            this.col++;
+        }
+        return { type: TOK.CHARLIT, value: ch || '', line: startLine, col: startCol };
+    }
+
     readString() {
         const startCol = this.col;
         const startLine = this.line;
-        this.pos++; // пропустить "
+        this.pos++;
         this.col++;
 
         let result = '';
@@ -161,14 +215,18 @@ class Lexer {
                 this.pos++;
                 this.col++;
                 const esc = this.input[this.pos];
-                // Упрощённо: сохраняем escape как есть
                 switch (esc) {
                     case 'n': result += '\n'; break;
                     case 't': result += '\t'; break;
                     case 'r': result += '\r'; break;
+                    case '0': result += '\0'; break;
                     case '\\': result += '\\'; break;
                     case '"': result += '"'; break;
                     case "'": result += "'"; break;
+                    case 'a': result += '\x07'; break;
+                    case 'b': result += '\x08'; break;
+                    case 'f': result += '\x0C'; break;
+                    case 'v': result += '\x0B'; break;
                     default: result += '\\' + esc;
                 }
                 this.pos++;
@@ -180,35 +238,84 @@ class Lexer {
             }
         }
         if (this.pos < this.input.length) {
-            this.pos++; // закрывающая "
+            this.pos++;
             this.col++;
         }
         return { type: TOK.STRING, value: result, line: startLine, col: startCol };
     }
 
+    readUnicodeLit() {
+        const startCol = this.col;
+        const startLine = this.line;
+        this.pos += 7; // "Unicode"
+        this.col += 7;
+
+        if (this.pos >= this.input.length || this.input[this.pos] !== '[') {
+            return { type: TOK.UNICODE_LIT, value: '', line: startLine, col: startCol };
+        }
+        this.pos++; this.col++;
+
+        if (this.pos >= this.input.length || this.input[this.pos] !== '"') {
+            return { type: TOK.UNICODE_LIT, value: '', line: startLine, col: startCol };
+        }
+        this.pos++; this.col++;
+
+        const hexStart = this.pos;
+        while (this.pos < this.input.length && this.input[this.pos] !== '"') {
+            this.pos++; this.col++;
+        }
+        const hex = this.input.slice(hexStart, this.pos);
+
+        if (this.pos < this.input.length) { this.pos++; this.col++; }
+        if (this.pos < this.input.length && this.input[this.pos] === ']') {
+            this.pos++; this.col++;
+        }
+        return { type: TOK.UNICODE_LIT, value: hex, line: startLine, col: startCol };
+    }
+
+    readVersion() {
+        const startCol = this.col;
+        const start = this.pos;
+        this.pos++; this.col++; // @
+
+        if (this.pos >= this.input.length || !/[0-9]/.test(this.input[this.pos])) {
+            return { type: TOK.VERSION, value: '@', line: this.line, col: startCol };
+        }
+
+        while (this.pos < this.input.length) {
+            const ch = this.input[this.pos];
+            if (/[0-9]/.test(ch)) {
+                this.pos++; this.col++;
+                continue;
+            }
+            if (ch === '.' && this.pos + 1 < this.input.length && /[0-9]/.test(this.input[this.pos + 1])) {
+                this.pos++; this.col++;
+                continue;
+            }
+            break;
+        }
+        return { type: TOK.VERSION, value: this.input.slice(start, this.pos), line: this.line, col: startCol };
+    }
+
     readSingleLineComment() {
         while (this.pos < this.input.length && this.input[this.pos] !== '\n') {
-            this.pos++;
-            this.col++;
+            this.pos++; this.col++;
         }
     }
 
     readMultilineComment() {
-        this.pos += 2;
-        this.col += 2;
+        this.pos += 2; this.col += 2;
         while (this.pos < this.input.length - 1 &&
                !(this.input[this.pos] === '*' && this.input[this.pos + 1] === '/')) {
             if (this.input[this.pos] === '\n') {
-                this.line++;
-                this.col = 1;
+                this.line++; this.col = 1;
             } else {
                 this.col++;
             }
             this.pos++;
         }
         if (this.pos < this.input.length - 1) {
-            this.pos += 2;
-            this.col += 2;
+            this.pos += 2; this.col += 2;
         }
     }
 
@@ -216,14 +323,9 @@ class Lexer {
         const startCol = this.col;
         const startLine = this.line;
 
-        // три ~
         this.pos++; this.col++;
-        if (this.pos < this.input.length && this.input[this.pos] === '~') {
-            this.pos++; this.col++;
-        }
-        if (this.pos < this.input.length && this.input[this.pos] === '~') {
-            this.pos++; this.col++;
-        }
+        if (this.pos < this.input.length && this.input[this.pos] === '~') { this.pos++; this.col++; }
+        if (this.pos < this.input.length && this.input[this.pos] === '~') { this.pos++; this.col++; }
 
         let code = '';
         while (this.pos < this.input.length) {
@@ -231,13 +333,11 @@ class Lexer {
                 this.input[this.pos] === '~' &&
                 this.input[this.pos + 1] === '~' &&
                 this.input[this.pos + 2] === '~') {
-                this.pos += 3;
-                this.col += 3;
+                this.pos += 3; this.col += 3;
                 return { type: TOK.TILDE, value: code.trim(), line: startLine, col: startCol };
             }
             if (this.input[this.pos] === '\n') {
-                this.line++;
-                this.col = 1;
+                this.line++; this.col = 1;
             } else {
                 this.col++;
             }
@@ -257,20 +357,16 @@ class Lexer {
         const startLine = this.line;
         const startCol = this.col;
 
-        // /* */
-        if (ch === '/' && this.peek() === '*') {
-            this.readMultilineComment();
-            return this.nextToken();
-        }
-        // //
-        if (ch === '/' && this.peek() === '/') {
-            this.readSingleLineComment();
-            return this.nextToken();
-        }
+        if (ch === '/' && this.peek() === '*') { this.readMultilineComment(); return this.nextToken(); }
+        if (ch === '/' && this.peek() === '/') { this.readSingleLineComment(); return this.nextToken(); }
 
-        // ~~~
-        if (ch === '~') {
-            return this.readTildes();
+        if (ch === '~') return this.readTildes();
+
+        // Unicode["FF"]
+        if (ch === 'U' && this.input.slice(this.pos, this.pos + 7) === 'Unicode') {
+            if (this.pos + 7 < this.input.length && this.input[this.pos + 7] === '[') {
+                return this.readUnicodeLit();
+            }
         }
 
         // Число
@@ -279,20 +375,43 @@ class Lexer {
             return this.readNumber();
         }
 
+        // Char literal
+        if (ch === "'") {
+            return this.readCharLit();
+        }
+
         // Строка
         if (ch === '"') {
             return this.readString();
         }
 
-        // Идентификатор / ключевое слово
+        // Идентификатор
         if (/[A-Za-z_]/.test(ch)) {
             return this.readIdent();
         }
 
-        // Двухсимвольные операторы
+        // Трёхсимвольные
+        const three = this.input.slice(this.pos, this.pos + 3);
+        if (three === '...') {
+            this.pos += 3; this.col += 3;
+            return { type: TOK.ELLIPSIS, value: '...', line: startLine, col: startCol };
+        }
+        if (three === '**=') {
+            this.pos += 3; this.col += 3;
+            return { type: TOK.POWEQ, value: '**=', line: startLine, col: startCol };
+        }
+
+        // Двухсимвольные
         const two = this.input.slice(this.pos, this.pos + 2);
         switch (two) {
             case '**': this.pos += 2; this.col += 2; return { type: TOK.POW, value: '**', line: startLine, col: startCol };
+            case '++': this.pos += 2; this.col += 2; return { type: TOK.PLUSPLUS, value: '++', line: startLine, col: startCol };
+            case '--': this.pos += 2; this.col += 2; return { type: TOK.MINUSMINUS, value: '--', line: startLine, col: startCol };
+            case '+=': this.pos += 2; this.col += 2; return { type: TOK.PLUSEQ, value: '+=', line: startLine, col: startCol };
+            case '-=': this.pos += 2; this.col += 2; return { type: TOK.MINUSEQ, value: '-=', line: startLine, col: startCol };
+            case '*=': this.pos += 2; this.col += 2; return { type: TOK.STAREQ, value: '*=', line: startLine, col: startCol };
+            case '/=': this.pos += 2; this.col += 2; return { type: TOK.SLASHEQ, value: '/=', line: startLine, col: startCol };
+            case '%=': this.pos += 2; this.col += 2; return { type: TOK.PERCENTEQ, value: '%=', line: startLine, col: startCol };
             case '==': this.pos += 2; this.col += 2; return { type: TOK.EQEQ, value: '==', line: startLine, col: startCol };
             case '!=': this.pos += 2; this.col += 2; return { type: TOK.NEQ, value: '!=', line: startLine, col: startCol };
             case '<=': this.pos += 2; this.col += 2; return { type: TOK.LTE, value: '<=', line: startLine, col: startCol };
@@ -333,10 +452,9 @@ class Lexer {
             case '?': return make(TOK.QUESTION);
             case ':': return make(TOK.COLON);
             case '%': return make(TOK.PERCENT);
+            case '@': return this.readVersion();
             default:
-                // Неизвестный символ — пропускаем
-                this.pos++;
-                this.col++;
+                this.pos++; this.col++;
                 return this.nextToken();
         }
     }
@@ -357,19 +475,9 @@ function lex(text) {
 }
 
 // ============================================================
-// Парсеры объявлений — по мотивам parser.go
+// Парсер типа — с нормализацией T<A> → A
 // ============================================================
 
-/**
- * Парсит тип, начиная с позиции idx.
- * Возвращает { type, args, end } или null.
- *
- * Формат типа:
- *   int, float, string, bool, any, void
- *   arr[int], arr[arr[int]], arr[] (→ arr[any])
- *   T<A, B, C> (union)
- *   Error, BaseError, ... (custom types — на будущее)
- */
 function parseType(tokens, idx) {
     const tok = tokens[idx];
     if (!tok) return null;
@@ -378,7 +486,6 @@ function parseType(tokens, idx) {
     if (tok.type === TOK.KEYWORD && tok.value === 'arr') {
         const next = tokens[idx + 1];
         if (next && next.type === TOK.LBRACKET) {
-            // arr[...] — рекурсивно парсим содержимое
             const args = [];
             let j = idx + 2;
             let depth = 1;
@@ -392,7 +499,6 @@ function parseType(tokens, idx) {
                 j++;
             }
             if (depth !== 0) return null;
-            // Парсим содержимое
             const parsed = parseType(tokens, innerStart);
             if (parsed) args.push(parsed);
             return {
@@ -401,11 +507,10 @@ function parseType(tokens, idx) {
                 end: j + 1,
             };
         }
-        // arr без []
         return { type: 'arr', args: null, end: idx + 1 };
     }
 
-    // T<A, B, ...> — union
+    // T<A, B, ...>
     if (tok.type === TOK.KEYWORD && tok.value === 'T') {
         const next = tokens[idx + 1];
         if (next && next.type === TOK.LT) {
@@ -426,9 +531,13 @@ function parseType(tokens, idx) {
                 j++;
             }
             if (depth !== 0) return null;
-            // Последний аргумент
             const t = parseType(tokens, argStart);
             if (t) args.push(t);
+
+            // Нормализация: T<A> → A
+            if (args.length === 1) {
+                return { ...args[0], end: j + 1 };
+            }
             return {
                 type: 'T',
                 args,
@@ -438,12 +547,10 @@ function parseType(tokens, idx) {
         return null;
     }
 
-    // Примитивные типы
     if (tok.type === TOK.KEYWORD && TYPE_KEYWORDS.has(tok.value)) {
         return { type: tok.value, args: null, end: idx + 1 };
     }
 
-    // Идентификатор (custom type: Error, BaseError, ...)
     if (tok.type === TOK.IDENT && /^[A-Z]/.test(tok.value)) {
         return { type: tok.value, args: null, end: idx + 1 };
     }
@@ -451,9 +558,6 @@ function parseType(tokens, idx) {
     return null;
 }
 
-/**
- * Форматирует тип обратно в строку.
- */
 function formatType(t) {
     if (!t) return '';
     if (!t.args || t.args.length === 0) {
@@ -472,46 +576,60 @@ function formatType(t) {
 // Извлечение объявлений
 // ============================================================
 
-/**
- * Собирает функции.
- * Формат: <type> [*] <name>(<params>) { ... }
- *
- * Возвращает: name, returnType, params, line, col, bodyStart, bodyEnd
- * где bodyStart/bodyEnd — позиции { и } (0-based, для VS Code).
- */
 function extractFunctions(tokens) {
     const result = [];
     const seen = new Set();
 
     for (let i = 0; i < tokens.length; i++) {
-        const typeTok = tokens[i];
+        // async перед типом
+        let j = i;
+        let isAsync = false;
+        if (tokens[j] && tokens[j].type === TOK.KEYWORD && tokens[j].value === 'async') {
+            isAsync = true;
+            j++;
+        }
+
+        const typeTok = tokens[j];
+        if (!typeTok) continue;
         if (typeTok.type !== TOK.KEYWORD && typeTok.type !== TOK.IDENT) continue;
 
-        const parsedType = parseType(tokens, i);
+        const parsedType = parseType(tokens, j);
         if (!parsedType) continue;
 
-        let j = parsedType.end;
+        j = parsedType.end;
 
-        // Опциональный `*` (non-exportable)
         if (tokens[j] && tokens[j].type === TOK.STAR) j++;
 
-        // Имя функции
         const nameTok = tokens[j];
         if (!nameTok || nameTok.type !== TOK.IDENT) continue;
         if (KEYWORDS.has(nameTok.value)) continue;
 
         j++;
 
-        // `(`
         if (!tokens[j] || tokens[j].type !== TOK.LPAREN) continue;
         j++;
 
-        // Параметры
         const params = [];
         let paramError = false;
 
         while (j < tokens.length && tokens[j].type !== TOK.RPAREN && tokens[j].type !== TOK.EOF) {
             if (tokens[j].type === TOK.COMMA) { j++; continue; }
+
+            // ...variadic
+            if (tokens[j].type === TOK.ELLIPSIS) {
+                j++;
+                const paramName = tokens[j];
+                if (!paramName || paramName.type !== TOK.IDENT) { paramError = true; break; }
+                params.push({
+                    type: { type: 'arr', args: [{ type: 'any' }] },
+                    name: paramName.value,
+                    line: paramName.line - 1,
+                    col: paramName.col - 1,
+                    isVariadic: true,
+                });
+                j++;
+                continue;
+            }
 
             const paramType = parseType(tokens, j);
             if (!paramType) { paramError = true; break; }
@@ -529,7 +647,7 @@ function extractFunctions(tokens) {
             });
             j++;
 
-            // `= default`
+            // = default
             if (tokens[j] && tokens[j].type === TOK.EQUALS) {
                 j++;
                 let depth = 0;
@@ -556,13 +674,11 @@ function extractFunctions(tokens) {
         if (!tokens[j] || tokens[j].type !== TOK.RPAREN) continue;
         j++;
 
-        // После `)` — `{`
         if (!tokens[j] || tokens[j].type !== TOK.LBRACE) continue;
 
         const bodyStartTok = tokens[j];
         const bodyStart = { line: bodyStartTok.line - 1, col: bodyStartTok.col - 1 };
 
-        // Ищем соответствующую `}`
         let depth = 1;
         let k = j + 1;
         while (k < tokens.length && depth > 0) {
@@ -574,7 +690,6 @@ function extractFunctions(tokens) {
             k++;
         }
         if (depth !== 0) continue;
-        if (!tokens[k] || tokens[k].type !== TOK.RBRACE) continue;
 
         const bodyEnd = { line: tokens[k].line - 1, col: tokens[k].col - 1 };
 
@@ -589,26 +704,15 @@ function extractFunctions(tokens) {
             line: nameTok.line - 1,
             col: nameTok.col - 1,
             isExport: true,
+            isAsync,
             bodyStart,
             bodyEnd,
         });
-
-        // Не пропускаем — могут быть вложенные функции? Нет, у Skorpion плоские.
-        // i = k; // раскомментировать, если хотим быстрее
     }
 
     return result;
 }
 
-/**
- * Собирает переменные верхнего уровня.
- * Формат: <type> <name> = <expr>
- *
- * Исключает:
- *   - аргументы функций (внутри `(...)`)
- *   - имена после `.` (поля)
- *   - ключевые слова
- */
 function extractVariables(tokens) {
     const result = [];
     const seen = new Set();
@@ -624,24 +728,28 @@ function extractVariables(tokens) {
         if (tok.type === TOK.LBRACE) { blockDepth++; continue; }
         if (tok.type === TOK.RBRACE) { blockDepth--; continue; }
 
-        // Только вне аргументов
         if (parenDepth !== 0) continue;
 
-        // Пробуем распарсить тип
-        const parsedType = parseType(tokens, i);
+        // const Type name = ...
+        let isConst = false;
+        let j = i;
+        if (tokens[j] && tokens[j].type === TOK.KEYWORD && tokens[j].value === 'const') {
+            isConst = true;
+            j++;
+        }
+
+        const parsedType = parseType(tokens, j);
         if (!parsedType) continue;
 
-        let j = parsedType.end;
+        j = parsedType.end;
         const nameTok = tokens[j];
         if (!nameTok || nameTok.type !== TOK.IDENT) continue;
         if (KEYWORDS.has(nameTok.value)) continue;
 
-        // Пропускаем функции (после имени `(`)
         if (tokens[j + 1] && tokens[j + 1].type === TOK.LPAREN) continue;
 
         j++;
 
-        // После имени должен быть `=`
         if (!tokens[j] || tokens[j].type !== TOK.EQUALS) continue;
 
         const key = `${nameTok.value}@${nameTok.line}:${nameTok.col}`;
@@ -654,6 +762,7 @@ function extractVariables(tokens) {
             line: nameTok.line - 1,
             col: nameTok.col - 1,
             blockDepth,
+            isConst,
         });
 
         i = j - 1;
@@ -662,9 +771,6 @@ function extractVariables(tokens) {
     return result;
 }
 
-/**
- * Собирает типы ошибок: `const Name{field: type, ...} = new Parent`
- */
 function extractErrorTypes(tokens) {
     const result = [];
     const seen = new Set();
@@ -680,13 +786,11 @@ function extractErrorTypes(tokens) {
         let j = i + 2;
         if (!tokens[j] || tokens[j].type !== TOK.LBRACE) continue;
 
-        // Собираем поля
         const fields = [];
         let depth = 1;
         j++;
 
         while (j < tokens.length && depth > 0) {
-            // Поле: name: type
             const fieldName = tokens[j];
             if (fieldName && fieldName.type === TOK.IDENT) {
                 const colon = tokens[j + 1];
@@ -706,7 +810,6 @@ function extractErrorTypes(tokens) {
             j++;
         }
 
-        // Ищем `= new Parent`
         let parent = 'Error';
         if (tokens[j] && tokens[j].type === TOK.EQUALS) {
             j++;
@@ -735,9 +838,6 @@ function extractErrorTypes(tokens) {
     return result;
 }
 
-/**
- * Собирает импорты: `use module`, `use #module`, `use module &alias`.
- */
 function extractImports(tokens) {
     const result = [];
     for (let i = 0; i < tokens.length; i++) {
@@ -751,7 +851,6 @@ function extractImports(tokens) {
             j++;
         }
 
-        // Путь: ident ( / ident )*
         let path = '';
         while (j < tokens.length) {
             const t = tokens[j];
@@ -761,12 +860,17 @@ function extractImports(tokens) {
             } else if (t.type === TOK.SLASH) {
                 path += '/';
                 j++;
+            } else if (t.type === TOK.COLON) {
+                path += ':';
+                j++;
+            } else if (t.type === TOK.VERSION) {
+                path += t.value;
+                j++;
             } else {
                 break;
             }
         }
 
-        // Алиас: & name
         let alias = null;
         if (tokens[j] && tokens[j].type === TOK.AMPERSAND) {
             j++;
@@ -787,15 +891,6 @@ function extractImports(tokens) {
 // Публичный API
 // ============================================================
 
-/**
- * @param {string} text
- * @returns {{
- *   functions: Array,
- *   variables: Array,
- *   errorTypes: Array,
- *   imports: Array,
- * }}
- */
 function analyze(text) {
     const tokens = lex(text);
     return {

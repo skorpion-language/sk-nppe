@@ -46,6 +46,15 @@ const ITEMS = {
     type:       { kind: vscode.CompletionItemKind.Function, detail: 'Built-in', doc: 'Returns the real type name.', snippet: 'type(${1:value})' },
     detruncate: { kind: vscode.CompletionItemKind.Function, detail: 'Built-in', doc: 'Returns the declared type name.', snippet: 'detruncate(${1:value})' },
 
+    async:    { kind: vscode.CompletionItemKind.Keyword, detail: 'Async', doc: 'Async function modifier.', snippet: 'async ${1:int} ${2:name}(${3:args}) {\n\t$0\n}' },
+    await:    { kind: vscode.CompletionItemKind.Keyword, detail: 'Await', doc: 'Await a Promise.', snippet: 'await ${1:expr}' },
+    break:    { kind: vscode.CompletionItemKind.Keyword, detail: 'Break', doc: 'Break out of loop.' },
+    continue: { kind: vscode.CompletionItemKind.Keyword, detail: 'Continue', doc: 'Continue loop.' },
+    do:       { kind: vscode.CompletionItemKind.Keyword, detail: 'Do-While', doc: 'Do-while loop.', snippet: 'do {\n\t$0\n} while (${1:condition})' },
+    in:       { kind: vscode.CompletionItemKind.Keyword, detail: 'In', doc: 'For-in loop keyword.' },
+    Promise:  { kind: vscode.CompletionItemKind.Keyword, detail: 'Promise', doc: 'Promise[T] — async value.', snippet: 'Promise[${1:value}]' },
+    IknowIdo: { kind: vscode.CompletionItemKind.Keyword, detail: 'IknowIdo', doc: 'IknowIdo block.', snippet: 'IknowIdo {\n\t$0\n}' },
+
     // === Встроенные типы ошибок ===
     Error:  { kind: vscode.CompletionItemKind.Class, detail: 'Built-in type', doc: 'Base error with `msg`.' },
 
@@ -66,8 +75,12 @@ const ITEMS = {
 function formatFunctionSignature(fn) {
     const params = (fn.params || fn.args || [])
         .map(p => `${formatType(p.type)} ${p.name}`)
+        .map(p => p.isVariadic
+            ? `...${p.name}`
+            : `${formatType(p.type)} ${p.name}`)
         .join(', ');
-    return `${formatType(fn.returnType)} ${fn.name}(${params})`;
+    const asyncPrefix = fn.isAsync ? 'async ' : '';
+    return `${asyncPrefix}${formatType(fn.returnType)} ${fn.name}(${params})`;
 }
 
 /**

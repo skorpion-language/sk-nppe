@@ -59,11 +59,11 @@
       "patterns": [
         {
           "name": "keyword.control",
-          "match": "\\b(if|elsif|else|while|for|case|try|catch|throw|return|break|continue|new|as|in|use)\\b"
+          "match": "\\b(if|elsif|else|while|for|in|case|try|catch|throw|return|break|continue|do|new|as|use|await|Promise)\\b"
         },
         {
           "name": "storage.modifier",
-          "match": "\\b(const|void|includeC)\\b"
+          "match": "\\b(const|void|includeC|async|IknowIdo)\\b"
         },
         {
           "name": "constant.language",
@@ -117,7 +117,7 @@
       "patterns": [
         {
           "name": "support.function.builtin",
-          "match": "\\b(to_int|to_float|to_double|to_bool|to_string|type|length|detruncate)\\b(?=\\s*\\()"
+          "match": "\\b(to_int|to_float|to_double|to_bool|to_string|type|length|detruncate|isAsyncEnded)\\b(?=\\s*\\()"
         }
       ]
     },
@@ -126,7 +126,7 @@
       "patterns": [
         {
           "name": "keyword.operator",
-          "match": "&&|\\|\\||==|!=|<=|>=|\\.\\.|->|[+\\*/%<>=!?:$^]|#|&"
+          "match": "&&|\\|\\||==|!=|<=|>=|\\.\\.\\.|\\.\\.|->|[+\\*/%<>=!?:$^]|#|&"
         },
         {
           "name": "keyword.operator",
