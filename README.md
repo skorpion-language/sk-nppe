@@ -12,7 +12,7 @@ Corresponds to Skorpion version `2026.10.b01`.
 
 ## Install
 
-1. Save files `sk-nppe.xml` and `spc-nppe.xml`
+1. Save files [`sk-nppe.xml`](https://github.com/skorpion-language/sk-nppe/blob/main/sk-nppe.xml) and [`spc-nppe.xml`](https://github.com/skorpion-language/sk-nppe/blob/main/spc-nppe.xml)
 2. Open Notepad++
 3. Click `Language` -> `User Defined Language` -> `Define your language...`
 4. In opened window click `Import...`
