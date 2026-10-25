@@ -10,6 +10,7 @@ Adding:
 ## Version
 Corresponds to Skorpion version `2026.10.b01`.
 
+
 ## Install
 
 1. Save files [`sk-nppe.xml`](https://github.com/skorpion-language/sk-nppe/blob/main/sk-nppe.xml) and [`spc-nppe.xml`](https://github.com/skorpion-language/sk-nppe/blob/main/spc-nppe.xml)
