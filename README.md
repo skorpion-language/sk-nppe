@@ -19,7 +19,7 @@ Corresponds to Skorpion version `2026.10.b01`.
 5. Select downloaded files and click `Open`
 6. Done!
 
-> If after p. 5 you see `Fail to import.` create [issue here](https://).
+> If after p. 5 you see `Fail to import.` create [issue here](https://github.com/skorpion-language/sk-nppe/issues/new).
 
 ## License
 Distributed under [Apache-2.0 License](./LICENSE)
