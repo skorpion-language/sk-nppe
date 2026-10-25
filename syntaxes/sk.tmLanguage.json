@@ -126,7 +126,7 @@
       "patterns": [
         {
           "name": "keyword.operator",
-          "match": "&&|\\|\\||==|!=|<=|>=|\\.\\.\\.|\\.\\.|->|[+\\*/%<>=!?:$^]|#|&"
+          "match": "&&|\\|\\||-=|==|!=|<=|>=|\\.\\.\\.|\\.\\.|->|[+\\*/%<>=!?:$^]|#|&"
         },
         {
           "name": "keyword.operator",
@@ -147,7 +147,7 @@
         },
         {
           "name": "constant.numeric.integer",
-          "match": "-?\\d+\\b"
+          "match": "-?\\d+f?\\b"
         },
         {
           "name": "constant.numeric.precision",

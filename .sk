@@ -1,0 +1,10 @@
+
+const float x = 10.0f
+
+int a(...args) {
+    int x = 10
+    x
+}
+
+a(a)
+x

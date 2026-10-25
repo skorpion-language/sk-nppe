@@ -718,15 +718,25 @@ function extractVariables(tokens) {
     const seen = new Set();
 
     let parenDepth = 0;
-    let blockDepth = 0;
+    let braceDepth = 0;   // это НЕ blockDepth, а глубина { } токенов
+    let currentBlockDepth = 0; // реальная блочная глубина (функции + вложенные)
 
     for (let i = 0; i < tokens.length; i++) {
         const tok = tokens[i];
 
         if (tok.type === TOK.LPAREN) { parenDepth++; continue; }
         if (tok.type === TOK.RPAREN) { parenDepth--; continue; }
-        if (tok.type === TOK.LBRACE) { blockDepth++; continue; }
-        if (tok.type === TOK.RBRACE) { blockDepth--; continue; }
+
+        if (tok.type === TOK.LBRACE) {
+            braceDepth++;
+            currentBlockDepth++;
+            continue;
+        }
+        if (tok.type === TOK.RBRACE) {
+            braceDepth--;
+            currentBlockDepth--;
+            continue;
+        }
 
         if (parenDepth !== 0) continue;
 
@@ -761,7 +771,7 @@ function extractVariables(tokens) {
             type: parsedType,
             line: nameTok.line - 1,
             col: nameTok.col - 1,
-            blockDepth,
+            blockDepth: currentBlockDepth,
             isConst,
         });
 

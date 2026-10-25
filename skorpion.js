@@ -8,17 +8,20 @@ const ITEMS = {
     elsif:  { kind: vscode.CompletionItemKind.Keyword, detail: 'Conditional', doc: 'Else-if branch.', snippet: 'elsif (${1:condition}) {\n\t$0\n}' },
     else:   { kind: vscode.CompletionItemKind.Keyword, detail: 'Conditional', doc: 'Final branch.', snippet: 'else {\n\t$0\n}' },
     while:  { kind: vscode.CompletionItemKind.Keyword, detail: 'Loop', doc: 'Loop while true.', snippet: 'while (${1:condition}) {\n\t$0\n}' },
-    for:    { kind: vscode.CompletionItemKind.Keyword, detail: 'Loop', doc: 'Iterate over a collection.', snippet: 'for (${1:item} in ${2:collection}) {\n\t$0\n}' },
+    for:    { kind: vscode.CompletionItemKind.Keyword, detail: 'Loop', doc: 'Iterate over a collection.', snippet: 'for (${1:type} ${2:item} in ${3:collection}) {\n\t$0\n}' },
     case:   { kind: vscode.CompletionItemKind.Keyword, detail: 'Switch', doc: 'Multi-branch switch.', snippet: 'case (${1:value}) {\n\t${2:1} { $3 },\n\t_ { $0 },\n}' },
     try:    { kind: vscode.CompletionItemKind.Keyword, detail: 'Exception handling', doc: 'Try block.', snippet: 'try {\n\t$0\n}' },
     catch:  { kind: vscode.CompletionItemKind.Keyword, detail: 'Exception handling', doc: 'Catch block.', snippet: 'catch (${1:Error} as ${2:e}) {\n\t$0\n}' },
     throw:  { kind: vscode.CompletionItemKind.Keyword, detail: 'Exception handling', doc: 'Throw an error.', snippet: 'throw ${1:BaseError}{code: ${2:1}}' },
     return: { kind: vscode.CompletionItemKind.Keyword, detail: 'Return', doc: 'Return from a function.', snippet: 'return ${1:value}' },
 
-    const:  { kind: vscode.CompletionItemKind.Keyword, detail: 'Declaration', doc: 'Immutable binding.', snippet: 'const ${1:Name}{${2:field: type}} = new ${3:Error}' },
+    const:  { kind: vscode.CompletionItemKind.Keyword, detail: 'Declaration', doc: 'Immutable binding.', snippet: 'const ${1:type} ${2:name} = ${3:value}' },
+    err:    { kind: vscode.CompletionItemKind.Keyword, detail: 'Declaration', doc: 'Immutable binding.', snippet: 'const ${1:Name}{${2:field: type}} = new ${3:Error}' },
     new:    { kind: vscode.CompletionItemKind.Keyword, detail: 'Constructor', doc: 'Creates an instance.', snippet: 'new ${1:Error}' },
     as:     { kind: vscode.CompletionItemKind.Keyword, detail: 'Binding', doc: 'Binds a caught error.' },
-    use:    { kind: vscode.CompletionItemKind.Keyword, detail: 'Import', doc: 'Imports a module.', snippet: 'use #${1:std/io}' },
+    use:    { kind: vscode.CompletionItemKind.Keyword, detail: 'Import', doc: 'Imports a module.', snippet: 'use ${1:std/io}' },
+    lib:    { kind: vscode.CompletionItemKind.Keyword, detail: 'Import library', doc: 'Imports a library.', snippet: 'use lib:${1:author}/${2:name}' },
+    libver: { kind: vscode.CompletionItemKind.Keyword, detail: 'Import library', doc: 'Imports a library.', snippet: 'use lib:${1:author}/${2:name}@${3:1.0.0}' },
     includeC: { kind: vscode.CompletionItemKind.Keyword, detail: 'Inline C', doc: 'Embeds a block of C.', snippet: 'includeC ~~~\n\t$0\n~~~' },
 
     // === Литералы ===
@@ -30,12 +33,13 @@ const ITEMS = {
     int:    { kind: vscode.CompletionItemKind.TypeParameter, detail: 'Type', doc: '64-bit signed integer.' },
     float:  { kind: vscode.CompletionItemKind.TypeParameter, detail: 'Type', doc: 'Floating point number.' },
     double: { kind: vscode.CompletionItemKind.TypeParameter, detail: 'Type', doc: 'Double-precision float.' },
+    char:   { kind: vscode.CompletionItemKind.TypeParameter, detail: 'Type', doc: 'Only text with length one byte.' },
     string: { kind: vscode.CompletionItemKind.TypeParameter, detail: 'Type', doc: 'UTF-8 text.' },
     bool:   { kind: vscode.CompletionItemKind.TypeParameter, detail: 'Type', doc: 'Boolean.' },
     any:    { kind: vscode.CompletionItemKind.TypeParameter, detail: 'Type', doc: 'Any value.' },
     void:   { kind: vscode.CompletionItemKind.TypeParameter, detail: 'Type', doc: 'No return value.' },
     arr:    { kind: vscode.CompletionItemKind.TypeParameter, detail: 'Type', doc: 'Array: `arr[T]`.', snippet: 'arr[${1:int}]' },
-    T:  { kind: vscode.CompletionItemKind.TypeParameter, detail: 'Type', doc: 'Union type: `T<T1, T2, ...>`.', snippet: 'T<${1:int}, ${2:...}>' },
+    T:      { kind: vscode.CompletionItemKind.TypeParameter, detail: 'Type', doc: 'Union type: `T<T1, T2, ...>`.', snippet: 'T<${1:int}, ${2:...}>' },
 
     // === Встроенные функции ===
     to_int:     { kind: vscode.CompletionItemKind.Function, detail: 'Conversion', doc: 'Converts to `int`.', snippet: 'to_int(${1:value})' },
@@ -59,25 +63,29 @@ const ITEMS = {
     Error:  { kind: vscode.CompletionItemKind.Class, detail: 'Built-in type', doc: 'Base error with `msg`.' },
 
     // === Шаблоны ===
-    main:     { kind: vscode.CompletionItemKind.Snippet, detail: 'Entry point', doc: 'Main entry point.', snippet: 'void main(arr args) {\n\t$0\n}' },
-    function: { kind: vscode.CompletionItemKind.Snippet, detail: 'Function', doc: 'Function declaration.', snippet: '${1:type} ${2:name}(${3:args}) {\n\t$0\n}' },
-    variable: { kind: vscode.CompletionItemKind.Snippet, detail: 'Variable', doc: 'Variable declaration.', snippet: '${1:type} ${2:name} = ${3:value}' }
+    main:      { kind: vscode.CompletionItemKind.Snippet, detail: 'Entry point', doc: 'Main entry point.', snippet: 'void main(arr args) {\n\t$0\n}' },
+    function:  { kind: vscode.CompletionItemKind.Snippet, detail: 'Function', doc: 'Function declaration.', snippet: '${1:type} ${2:name}(${3:args}) {\n\t$0\n}' },
+    variable:  { kind: vscode.CompletionItemKind.Snippet, detail: 'Variable', doc: 'Variable declaration.', snippet: '${1:type} ${2:name} = ${3:value}' },
+    default:   { kind: vscode.CompletionItemKind.Snippet, detail: 'Case default', doc: 'Case default branch declaration.', snippet: '_ {\n\t$0\n},' }
 };
 
 // ============================================================
 // Helpers
 // ============================================================
 
+function formatParam(p) {
+    if (p.isVariadic) {
+        return `...${p.name} arr[any]`;
+    }
+    return `${formatType(p.type)} ${p.name}`;
+}
+
 /**
  * Форматирует сигнатуру функции.
- * Обратите внимание: у нас params, а не args — как в новом lexer.js.
  */
 function formatFunctionSignature(fn) {
     const params = (fn.params || fn.args || [])
-        .map(p => `${formatType(p.type)} ${p.name}`)
-        .map(p => p.isVariadic
-            ? `...${p.name}`
-            : `${formatType(p.type)} ${p.name}`)
+        .map(formatParam)
         .join(', ');
     const asyncPrefix = fn.isAsync ? 'async ' : '';
     return `${asyncPrefix}${formatType(fn.returnType)} ${fn.name}(${params})`;
@@ -85,10 +93,6 @@ function formatFunctionSignature(fn) {
 
 /**
  * Находит функцию, внутри тела которой находится позиция.
- * @param {Array} functions — из analyze()
- * @param {number} line — 0-based
- * @param {number} character — 0-based
- * @returns {object|null}
  */
 function findEnclosingFunction(functions, line, character) {
     for (const fn of functions) {
@@ -96,12 +100,10 @@ function findEnclosingFunction(functions, line, character) {
         const end = fn.bodyEnd;
         if (!start || !end) continue;
 
-        // Позиция после {
         const afterStart =
             line > start.line ||
             (line === start.line && character > start.col);
 
-        // Позиция до }
         const beforeEnd =
             line < end.line ||
             (line === end.line && character < end.col);
@@ -110,6 +112,90 @@ function findEnclosingFunction(functions, line, character) {
             return fn;
         }
     }
+    return null;
+}
+
+/**
+ * Считает блочную глубину (количество { } вокруг) для позиции.
+ */
+function getBlockDepthAt(document, line, character) {
+    const text = document.getText();
+    const lines = text.split(/\r\n|\r|\n/);
+
+    let depth = 0;
+    for (let i = 0; i < line; i++) {
+        for (const ch of lines[i]) {
+            if (ch === '{') depth++;
+            else if (ch === '}') depth--;
+        }
+    }
+    // Частичная строка до character
+    for (let i = 0; i < character && i < lines[line].length; i++) {
+        const ch = lines[line][i];
+        if (ch === '{') depth++;
+        else if (ch === '}') depth--;
+    }
+    return depth;
+}
+
+/**
+ * Находит символ (функцию, переменную, параметр, error-тип) по имени.
+ * Возвращает { line, col, kind, data } или null.
+ */
+function findSymbol(document, position, word) {
+    const text = document.getText();
+    const { functions, variables, errorTypes } = analyze(text);
+
+    // 1) Параметр ТЕКУЩЕЙ функции (только если курсор внутри тела)
+    const enclosingFn = findEnclosingFunction(functions, position.line, position.character);
+    if (enclosingFn) {
+        const param = enclosingFn.params.find(p => p.name === word);
+        if (param) {
+            return {
+                line: param.line,
+                col: param.col,
+                kind: 'parameter',
+                data: param,
+            };
+        }
+    }
+
+    // 2) Локальная переменная — только в ТОМ ЖЕ блоке или во внешнем
+    const currentBlockDepth = getBlockDepthAt(document, position.line, position.character);
+    const localVar = variables.find(v =>
+        v.name === word && v.blockDepth <= currentBlockDepth
+    );
+    if (localVar) {
+        return {
+            line: localVar.line,
+            col: localVar.col,
+            kind: 'variable',
+            data: localVar,
+        };
+    }
+
+    // 3) Функция
+    const fn = functions.find(f => f.name === word);
+    if (fn) {
+        return {
+            line: fn.line,
+            col: fn.col,
+            kind: 'function',
+            data: fn,
+        };
+    }
+
+    // 4) Error-тип
+    const e = errorTypes.find(x => x.name === word);
+    if (e) {
+        return {
+            line: e.line,
+            col: e.col,
+            kind: 'errorType',
+            data: e,
+        };
+    }
+
     return null;
 }
 
@@ -148,7 +234,6 @@ function activateSkorpion(context) {
                 const text = document.getText();
                 const { functions, variables, errorTypes } = analyze(text);
 
-                // Найти функцию, в теле которой стоит курсор
                 const enclosingFn = findEnclosingFunction(
                     functions,
                     position.line,
@@ -157,7 +242,6 @@ function activateSkorpion(context) {
 
                 // 2a) Локальные функции
                 for (const fn of functions) {
-                    // Не предлагать функцию в её собственном объявлении
                     if (fn.line === position.line && fn.col <= position.character) continue;
                     if (seenNames.has(fn.name)) continue;
 
@@ -180,22 +264,29 @@ function activateSkorpion(context) {
                             p.name,
                             vscode.CompletionItemKind.Variable
                         );
-                        item.detail = `(parameter) ${formatType(p.type)}`;
-                        item.sortText = '0_' + p.name; // параметры выше обычных переменных
+                        item.detail = p.isVariadic
+                            ? `(parameter) ...${p.name}: arr[any]`
+                            : `(parameter) ${formatType(p.type)}`;
+                        item.sortText = '0_' + p.name;
                         item.documentation = new vscode.MarkdownString(
                             '```skorpion\n' +
-                            `(parameter) ${p.name}: ${formatType(p.type)}\n` +
-                            '```'
+                            (p.isVariadic
+                                ? `(parameter) ...${p.name}: arr[any]`
+                                : `(parameter) ${p.name}: ${formatType(p.type)}`) +
+                            '\n```'
                         );
                         items.push(item);
                         seenNames.add(p.name);
                     }
                 }
 
+                const currentBlockDepth = getBlockDepthAt(document, position.line, position.character);
+
                 // 2c) Локальные переменные
                 for (const v of variables) {
                     if (v.line === position.line && v.col <= position.character) continue;
                     if (seenNames.has(v.name)) continue;
+                    if (v.blockDepth > currentBlockDepth) continue;   // ← НЕ показывать переменные из других/вложенных блоков
 
                     const item = new vscode.CompletionItem(v.name, vscode.CompletionItemKind.Variable);
                     item.detail = 'Local Variable';
@@ -256,85 +347,99 @@ function activateSkorpion(context) {
                 return new vscode.Hover(md, range);
             }
 
-            // 2) Локальные из документа
-            const text = document.getText();
-            const { functions, variables, errorTypes } = analyze(text);
+            // 2) Локальные символы (параметр / переменная / функция / error-тип)
+            const symbol = findSymbol(document, position, word);
+            if (symbol) {
+                const md = new vscode.MarkdownString();
 
-            // Параметры текущей функции — приоритетнее одноимённых переменных
-            const enclosingFn = findEnclosingFunction(
-                functions,
-                position.line,
-                position.character
-            );
-            if (enclosingFn) {
-                const param = enclosingFn.params.find(p => p.name === word);
-                if (param) {
-                    const md = new vscode.MarkdownString();
+                if (symbol.kind === 'parameter') {
+                    const p = symbol.data;
                     md.appendMarkdown('**(parameter)**\n\n');
                     md.appendCodeblock(
-                        `(parameter) ${param.name}: ${formatType(param.type)}`,
+                        p.isVariadic
+                            ? `(parameter) ...${p.name}: arr[any]`
+                            : `(parameter) ${p.name}: ${formatType(p.type)}`,
                         'skorpion'
                     );
-                    return new vscode.Hover(md, range);
+                } else if (symbol.kind === 'variable') {
+                    const v = symbol.data;
+                    md.appendMarkdown('**Local Variable**\n\n');
+                    md.appendCodeblock(`${formatType(v.type)} ${v.name}`, 'skorpion');
+                } else if (symbol.kind === 'function') {
+                    const fn = symbol.data;
+                    md.appendMarkdown('**Local Function**\n\n');
+                    md.appendCodeblock(formatFunctionSignature(fn), 'skorpion');
+                } else if (symbol.kind === 'errorType') {
+                    const e = symbol.data;
+                    md.appendMarkdown('**Local Error Type**\n\n');
+                    const fields = (e.fields || [])
+                        .map(f => `${f.name}: ${formatType(f.type)}`)
+                        .join(', ');
+                    md.appendCodeblock(
+                        `const ${e.name}{${fields}} = new ${e.parent || 'Error'}`,
+                        'skorpion'
+                    );
                 }
-            }
 
-            const fn = functions.find(f => f.name === word);
-            if (fn) {
-                const md = new vscode.MarkdownString();
-                md.appendMarkdown('**Local Function**\n\n');
-                md.appendCodeblock(formatFunctionSignature(fn), 'skorpion');
-                return new vscode.Hover(md, range);
-            }
-
-            const v = variables.find(x => x.name === word);
-            if (v) {
-                const md = new vscode.MarkdownString();
-                md.appendMarkdown('**Local Variable**\n\n');
-                md.appendCodeblock(`${formatType(v.type)} ${v.name}`, 'skorpion');
-                return new vscode.Hover(md, range);
-            }
-
-            const e = errorTypes.find(x => x.name === word);
-            if (e) {
-                const md = new vscode.MarkdownString();
-                md.appendMarkdown('**Local Error Type**\n\n');
-                const fields = (e.fields || [])
-                    .map(f => `${f.name}: ${formatType(f.type)}`)
-                    .join(', ');
-                md.appendCodeblock(
-                    `const ${e.name}{${fields}} = new ${e.parent || 'Error'}`,
-                    'skorpion'
-                );
                 return new vscode.Hover(md, range);
             }
         }
     });
 
+    // ============================================================
+    // Definition provider — Ctrl+Click / F12 на функции, переменные,
+    // параметры, error-типы
+    // ============================================================
     const definition = vscode.languages.registerDefinitionProvider('skorpion', {
         provideDefinition(document, position) {
             const range = document.getWordRangeAtPosition(position, /[A-Za-z_]\w*/);
             if (!range) return;
 
             const word = document.getText(range);
-            const text = document.getText();
-            const { functions, variables, errorTypes } = analyze(text);
-
-            const target =
-                functions.find(f => f.name === word) ||
-                variables.find(v => v.name === word) ||
-                errorTypes.find(e => e.name === word);
-
-            if (!target) return;
+            const symbol = findSymbol(document, position, word);
+            if (!symbol) return;
 
             return new vscode.Location(
                 document.uri,
-                new vscode.Position(target.line, target.col)
+                new vscode.Position(symbol.line, symbol.col)
             );
         }
     });
 
-    context.subscriptions.push(provider, hover, definition);
+    // Optional: подсветка всех вхождений под курсором
+    const documentHighlight = vscode.languages.registerDocumentHighlightProvider('skorpion', {
+        provideDocumentHighlights(document, position) {
+            const range = document.getWordRangeAtPosition(position, /[A-Za-z_]\w*/);
+            if (!range) return;
+
+            const word = document.getText(range);
+            if (!word) return;
+
+            const text = document.getText();
+            const highlights = [];
+            const re = new RegExp(`\\b${word}\\b`, 'g');
+            const lines = text.split(/\r\n|\r|\n/);
+
+            for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+                let m;
+                re.lastIndex = 0;
+                while ((m = re.exec(lines[lineIdx])) !== null) {
+                    highlights.push(
+                        new vscode.DocumentHighlight(
+                            new vscode.Range(
+                                lineIdx, m.index,
+                                lineIdx, m.index + word.length
+                            ),
+                            vscode.DocumentHighlightKind.Text
+                        )
+                    );
+                }
+            }
+            return highlights;
+        }
+    });
+
+    context.subscriptions.push(provider, hover, definition, documentHighlight);
 }
 
 module.exports = { activateSkorpion };
